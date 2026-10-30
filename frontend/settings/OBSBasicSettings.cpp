@@ -587,6 +587,105 @@ OBSBasicSettings::OBSBasicSettings(QWidget *parent)
 
 #undef ADD_HOTKEY_FOCUS_TYPE
 
+	/* Dynamically extend track-related UI elements from 6 to MAX_AUDIO_MIXES */
+	{
+		/* Simple: Recording tracks */
+		simpleOutRecTrackBoxes.clear();
+		simpleOutRecTrackBoxes.reserve(MAX_AUDIO_MIXES);
+		simpleOutRecTrackBoxes.push_back(ui->simpleOutRecTrack1);
+		simpleOutRecTrackBoxes.push_back(ui->simpleOutRecTrack2);
+		simpleOutRecTrackBoxes.push_back(ui->simpleOutRecTrack3);
+		simpleOutRecTrackBoxes.push_back(ui->simpleOutRecTrack4);
+		simpleOutRecTrackBoxes.push_back(ui->simpleOutRecTrack5);
+		simpleOutRecTrackBoxes.push_back(ui->simpleOutRecTrack6);
+		for (int i = 6; i < (int)MAX_AUDIO_MIXES; ++i) {
+			QCheckBox *cb = new QCheckBox(QString::number(i + 1), this);
+			ui->horizontalLayoutSimpleTracks->addWidget(cb);
+			connect(cb, &QCheckBox::toggled, this, &OBSBasicSettings::OutputsChanged);
+			simpleOutRecTrackBoxes.push_back(cb);
+		}
+
+		/* Advanced: Stream single-track radios */
+		advOutTrackRadios.clear();
+		advOutTrackRadios.reserve(MAX_AUDIO_MIXES);
+		advOutTrackRadios.push_back(ui->advOutTrack1);
+		advOutTrackRadios.push_back(ui->advOutTrack2);
+		advOutTrackRadios.push_back(ui->advOutTrack3);
+		advOutTrackRadios.push_back(ui->advOutTrack4);
+		advOutTrackRadios.push_back(ui->advOutTrack5);
+		advOutTrackRadios.push_back(ui->advOutTrack6);
+		for (int i = 6; i < (int)MAX_AUDIO_MIXES; ++i) {
+			QRadioButton *rb = new QRadioButton(QString::number(i + 1), this);
+			ui->horizontalLayout_7->addWidget(rb);
+			connect(rb, &QRadioButton::clicked, this, &OBSBasicSettings::OutputsChanged);
+			advOutTrackRadios.push_back(rb);
+		}
+
+		/* Advanced: Stream multi-track checkboxes */
+		advOutMultiTrackBoxes.clear();
+		advOutMultiTrackBoxes.reserve(MAX_AUDIO_MIXES);
+		advOutMultiTrackBoxes.push_back(ui->advOutMultiTrack1);
+		advOutMultiTrackBoxes.push_back(ui->advOutMultiTrack2);
+		advOutMultiTrackBoxes.push_back(ui->advOutMultiTrack3);
+		advOutMultiTrackBoxes.push_back(ui->advOutMultiTrack4);
+		advOutMultiTrackBoxes.push_back(ui->advOutMultiTrack5);
+		advOutMultiTrackBoxes.push_back(ui->advOutMultiTrack6);
+		for (int i = 6; i < (int)MAX_AUDIO_MIXES; ++i) {
+			QCheckBox *cb = new QCheckBox(QString::number(i + 1), this);
+			ui->horizontalLayout_multitrack->addWidget(cb);
+			connect(cb, &QCheckBox::toggled, this, &OBSBasicSettings::OutputsChanged);
+			advOutMultiTrackBoxes.push_back(cb);
+		}
+
+		/* Advanced: Recording tracks */
+		advOutRecTrackBoxes.clear();
+		advOutRecTrackBoxes.reserve(MAX_AUDIO_MIXES);
+		advOutRecTrackBoxes.push_back(ui->advOutRecTrack1);
+		advOutRecTrackBoxes.push_back(ui->advOutRecTrack2);
+		advOutRecTrackBoxes.push_back(ui->advOutRecTrack3);
+		advOutRecTrackBoxes.push_back(ui->advOutRecTrack4);
+		advOutRecTrackBoxes.push_back(ui->advOutRecTrack5);
+		advOutRecTrackBoxes.push_back(ui->advOutRecTrack6);
+		for (int i = 6; i < (int)MAX_AUDIO_MIXES; ++i) {
+			QCheckBox *cb = new QCheckBox(QString::number(i + 1), this);
+			ui->horizontalLayout_9->addWidget(cb);
+			connect(cb, &QCheckBox::toggled, this, &OBSBasicSettings::OutputsChanged);
+			advOutRecTrackBoxes.push_back(cb);
+		}
+
+		/* Advanced: FLV track radios */
+		flvTrackRadios.clear();
+		flvTrackRadios.reserve(MAX_AUDIO_MIXES);
+		flvTrackRadios.push_back(ui->flvTrack1);
+		flvTrackRadios.push_back(ui->flvTrack2);
+		flvTrackRadios.push_back(ui->flvTrack3);
+		flvTrackRadios.push_back(ui->flvTrack4);
+		flvTrackRadios.push_back(ui->flvTrack5);
+		flvTrackRadios.push_back(ui->flvTrack6);
+		for (int i = 6; i < (int)MAX_AUDIO_MIXES; ++i) {
+			QRadioButton *rb = new QRadioButton(QString::number(i + 1), this);
+			ui->horizontalLayout_8->addWidget(rb);
+			connect(rb, &QRadioButton::clicked, this, &OBSBasicSettings::OutputsChanged);
+			flvTrackRadios.push_back(rb);
+		}
+
+		/* Advanced (FFmpeg): audio track checkboxes */
+		advOutFFTrackBoxes.clear();
+		advOutFFTrackBoxes.reserve(MAX_AUDIO_MIXES);
+		advOutFFTrackBoxes.push_back(ui->advOutFFTrack1);
+		advOutFFTrackBoxes.push_back(ui->advOutFFTrack2);
+		advOutFFTrackBoxes.push_back(ui->advOutFFTrack3);
+		advOutFFTrackBoxes.push_back(ui->advOutFFTrack4);
+		advOutFFTrackBoxes.push_back(ui->advOutFFTrack5);
+		advOutFFTrackBoxes.push_back(ui->advOutFFTrack6);
+		for (int i = 6; i < (int)MAX_AUDIO_MIXES; ++i) {
+			QCheckBox *cb = new QCheckBox(QString::number(i + 1), this);
+			ui->horizontalLayout_26->addWidget(cb);
+			connect(cb, &QCheckBox::toggled, this, &OBSBasicSettings::OutputsChanged);
+			advOutFFTrackBoxes.push_back(cb);
+		}
+	}
+
 	ui->simpleOutputVBitrate->setSingleStep(50);
 	ui->simpleOutputVBitrate->setSuffix(" Kbps");
 	ui->advOutFFVBitrate->setSingleStep(50);
@@ -1766,12 +1865,10 @@ void OBSBasicSettings::LoadSimpleOutputSettings()
 	int rbSize = config_get_int(main->Config(), "SimpleOutput", "RecRBSize");
 	int tracks = config_get_int(main->Config(), "SimpleOutput", "RecTracks");
 
-	ui->simpleOutRecTrack1->setChecked(tracks & (1 << 0));
-	ui->simpleOutRecTrack2->setChecked(tracks & (1 << 1));
-	ui->simpleOutRecTrack3->setChecked(tracks & (1 << 2));
-	ui->simpleOutRecTrack4->setChecked(tracks & (1 << 3));
-	ui->simpleOutRecTrack5->setChecked(tracks & (1 << 4));
-	ui->simpleOutRecTrack6->setChecked(tracks & (1 << 5));
+	for (int i = 0; i < (int)simpleOutRecTrackBoxes.size(); ++i) {
+		if (simpleOutRecTrackBoxes[i])
+			simpleOutRecTrackBoxes[i]->setChecked(tracks & (1 << i));
+	}
 
 	curPreset = preset;
 	curQSVPreset = qsvPreset;
@@ -1891,32 +1988,14 @@ void OBSBasicSettings::LoadAdvOutputStreamingSettings()
 	ui->filenameFormatting->setCompleter(specCompleter);
 	ui->filenameFormatting->setToolTip(makeFormatToolTip());
 
-	switch (trackIndex) {
-	case 1:
-		ui->advOutTrack1->setChecked(true);
-		break;
-	case 2:
-		ui->advOutTrack2->setChecked(true);
-		break;
-	case 3:
-		ui->advOutTrack3->setChecked(true);
-		break;
-	case 4:
-		ui->advOutTrack4->setChecked(true);
-		break;
-	case 5:
-		ui->advOutTrack5->setChecked(true);
-		break;
-	case 6:
-		ui->advOutTrack6->setChecked(true);
-		break;
+	for (int i = 0; i < (int)advOutTrackRadios.size(); ++i) {
+		if (advOutTrackRadios[i])
+			advOutTrackRadios[i]->setChecked((i + 1) == trackIndex);
 	}
-	ui->advOutMultiTrack1->setChecked(audioMixes & (1 << 0));
-	ui->advOutMultiTrack2->setChecked(audioMixes & (1 << 1));
-	ui->advOutMultiTrack3->setChecked(audioMixes & (1 << 2));
-	ui->advOutMultiTrack4->setChecked(audioMixes & (1 << 3));
-	ui->advOutMultiTrack5->setChecked(audioMixes & (1 << 4));
-	ui->advOutMultiTrack6->setChecked(audioMixes & (1 << 5));
+	for (int i = 0; i < (int)advOutMultiTrackBoxes.size(); ++i) {
+		if (advOutMultiTrackBoxes[i])
+			advOutMultiTrackBoxes[i]->setChecked(audioMixes & (1 << i));
+	}
 
 	obs_service_t *service_obj = main->GetService();
 	const char *protocol = nullptr;
@@ -2013,12 +2092,10 @@ void OBSBasicSettings::LoadAdvOutputRecordingSettings()
 	idx = ui->advOutRecFormat->findData(format);
 	ui->advOutRecFormat->setCurrentIndex(idx);
 
-	ui->advOutRecTrack1->setChecked(tracks & (1 << 0));
-	ui->advOutRecTrack2->setChecked(tracks & (1 << 1));
-	ui->advOutRecTrack3->setChecked(tracks & (1 << 2));
-	ui->advOutRecTrack4->setChecked(tracks & (1 << 3));
-	ui->advOutRecTrack5->setChecked(tracks & (1 << 4));
-	ui->advOutRecTrack6->setChecked(tracks & (1 << 5));
+	for (int i = 0; i < (int)advOutRecTrackBoxes.size(); ++i) {
+		if (advOutRecTrackBoxes[i])
+			advOutRecTrackBoxes[i]->setChecked(tracks & (1 << i));
+	}
 
 	if (astrcmpi(splitFileType, "Size") == 0) {
 		idx = 1;
@@ -2032,28 +2109,9 @@ void OBSBasicSettings::LoadAdvOutputRecordingSettings()
 	ui->advOutSplitFileTime->setValue(splitFileTime);
 	ui->advOutSplitFileSize->setValue(splitFileSize);
 
-	switch (flvTrack) {
-	case 1:
-		ui->flvTrack1->setChecked(true);
-		break;
-	case 2:
-		ui->flvTrack2->setChecked(true);
-		break;
-	case 3:
-		ui->flvTrack3->setChecked(true);
-		break;
-	case 4:
-		ui->flvTrack4->setChecked(true);
-		break;
-	case 5:
-		ui->flvTrack5->setChecked(true);
-		break;
-	case 6:
-		ui->flvTrack6->setChecked(true);
-		break;
-	default:
-		ui->flvTrack1->setChecked(true);
-		break;
+	for (int i = 0; i < (int)flvTrackRadios.size(); ++i) {
+		if (flvTrackRadios[i])
+			flvTrackRadios[i]->setChecked((i + 1) == flvTrack);
 	}
 }
 
@@ -2156,12 +2214,10 @@ void OBSBasicSettings::LoadAdvOutputFFmpegSettings()
 	SelectEncoder(ui->advOutFFAEncoder, aEncoder, aEncoderId);
 	ui->advOutFFACfg->setText(aEncCustom);
 
-	ui->advOutFFTrack1->setChecked(audioMixes & (1 << 0));
-	ui->advOutFFTrack2->setChecked(audioMixes & (1 << 1));
-	ui->advOutFFTrack3->setChecked(audioMixes & (1 << 2));
-	ui->advOutFFTrack4->setChecked(audioMixes & (1 << 3));
-	ui->advOutFFTrack5->setChecked(audioMixes & (1 << 4));
-	ui->advOutFFTrack6->setChecked(audioMixes & (1 << 5));
+	for (int i = 0; i < (int)advOutFFTrackBoxes.size(); ++i) {
+		if (advOutFFTrackBoxes[i])
+			advOutFFTrackBoxes[i]->setChecked(audioMixes & (1 << i));
+	}
 }
 
 void OBSBasicSettings::LoadAdvOutputAudioSettings()
@@ -3419,6 +3475,16 @@ static void SaveTrackIndex(config_t *config, const char *section, const char *na
 	}
 }
 
+static int GetCheckedTrackIndex(const std::vector<QPointer<QRadioButton>> &radios)
+{
+	for (size_t i = 0; i < radios.size(); ++i) {
+		if (radios[i] && radios[i]->isChecked()) {
+			return int(i + 1);
+		}
+	}
+	return 0;
+}
+
 void OBSBasicSettings::SaveFormat(QComboBox *combo)
 {
 	QVariant v = combo->currentData();
@@ -3525,8 +3591,7 @@ void OBSBasicSettings::SaveOutputSettings()
 	SaveComboData(ui->advOutAEncoder, "AdvOut", "AudioEncoder");
 	SaveCombo(ui->advOutRescale, "AdvOut", "RescaleRes");
 	SaveComboData(ui->advOutRescaleFilter, "AdvOut", "RescaleFilter");
-	SaveTrackIndex(main->Config(), "AdvOut", "TrackIndex", ui->advOutTrack1, ui->advOutTrack2, ui->advOutTrack3,
-		       ui->advOutTrack4, ui->advOutTrack5, ui->advOutTrack6);
+	config_set_int(main->Config(), "AdvOut", "TrackIndex", GetCheckedTrackIndex(advOutTrackRadios));
 	config_set_int(main->Config(), "AdvOut", "StreamMultiTrackAudioMixes", AdvOutGetStreamingSelectedAudioTracks());
 	config_set_string(main->Config(), "AdvOut", "RecType", RecTypeFromIdx(ui->advOutRecType->currentIndex()));
 
@@ -3567,13 +3632,14 @@ void OBSBasicSettings::SaveOutputSettings()
 	SaveSpinBox(ui->advOutFFABitrate, "AdvOut", "FFABitrate");
 	SaveEncoder(ui->advOutFFAEncoder, "AdvOut", "FFAEncoder");
 	SaveEdit(ui->advOutFFACfg, "AdvOut", "FFACustom");
-	config_set_int(main->Config(), "AdvOut", "FFAudioMixes",
-		       (ui->advOutFFTrack1->isChecked() ? (1 << 0) : 0) |
-			       (ui->advOutFFTrack2->isChecked() ? (1 << 1) : 0) |
-			       (ui->advOutFFTrack3->isChecked() ? (1 << 2) : 0) |
-			       (ui->advOutFFTrack4->isChecked() ? (1 << 3) : 0) |
-			       (ui->advOutFFTrack5->isChecked() ? (1 << 4) : 0) |
-			       (ui->advOutFFTrack6->isChecked() ? (1 << 5) : 0));
+	{
+		int mixesMask = 0;
+		for (int i = 0; i < (int)advOutFFTrackBoxes.size(); ++i) {
+			if (advOutFFTrackBoxes[i] && advOutFFTrackBoxes[i]->isChecked())
+				mixesMask |= (1 << i);
+		}
+		config_set_int(main->Config(), "AdvOut", "FFAudioMixes", mixesMask);
+	}
 	SaveCombo(ui->advOutTrack1Bitrate, "AdvOut", "Track1Bitrate");
 	SaveCombo(ui->advOutTrack2Bitrate, "AdvOut", "Track2Bitrate");
 	SaveCombo(ui->advOutTrack3Bitrate, "AdvOut", "Track3Bitrate");
@@ -3590,8 +3656,9 @@ void OBSBasicSettings::SaveOutputSettings()
 	if (vodTrackCheckbox) {
 		SaveCheckBox(simpleVodTrack, "SimpleOutput", "VodTrackEnabled");
 		SaveCheckBox(vodTrackCheckbox, "AdvOut", "VodTrackEnabled");
-		SaveTrackIndex(main->Config(), "AdvOut", "VodTrackIndex", vodTrack[0], vodTrack[1], vodTrack[2],
-			       vodTrack[3], vodTrack[4], vodTrack[5]);
+		config_set_int(main->Config(), "AdvOut", "VodTrackIndex",
+			       GetCheckedTrackIndex(std::vector<QPointer<QRadioButton>>(vodTrack,
+											     vodTrack + MAX_AUDIO_MIXES)));
 	}
 
 	SaveCheckBox(ui->advReplayBuf, "AdvOut", "RecRB");
@@ -5711,52 +5778,41 @@ void OBSBasicSettings::SetAdvancedIcon(const QIcon &icon)
 
 int OBSBasicSettings::CurrentFLVTrack()
 {
-	if (ui->flvTrack1->isChecked()) {
-		return 1;
-	} else if (ui->flvTrack2->isChecked()) {
-		return 2;
-	} else if (ui->flvTrack3->isChecked()) {
-		return 3;
-	} else if (ui->flvTrack4->isChecked()) {
-		return 4;
-	} else if (ui->flvTrack5->isChecked()) {
-		return 5;
-	} else if (ui->flvTrack6->isChecked()) {
-		return 6;
+	for (int i = 0; i < (int)flvTrackRadios.size(); ++i) {
+		if (flvTrackRadios[i] && flvTrackRadios[i]->isChecked())
+			return i + 1;
 	}
-
 	return 0;
 }
 
 int OBSBasicSettings::SimpleOutGetSelectedAudioTracks()
 {
-	int tracks = (ui->simpleOutRecTrack1->isChecked() ? (1 << 0) : 0) |
-		     (ui->simpleOutRecTrack2->isChecked() ? (1 << 1) : 0) |
-		     (ui->simpleOutRecTrack3->isChecked() ? (1 << 2) : 0) |
-		     (ui->simpleOutRecTrack4->isChecked() ? (1 << 3) : 0) |
-		     (ui->simpleOutRecTrack5->isChecked() ? (1 << 4) : 0) |
-		     (ui->simpleOutRecTrack6->isChecked() ? (1 << 5) : 0);
-	return tracks;
+	int mask = 0;
+	for (int i = 0; i < (int)simpleOutRecTrackBoxes.size(); ++i) {
+		if (simpleOutRecTrackBoxes[i] && simpleOutRecTrackBoxes[i]->isChecked())
+			mask |= (1 << i);
+	}
+	return mask;
 }
 
 int OBSBasicSettings::AdvOutGetSelectedAudioTracks()
 {
-	int tracks =
-		(ui->advOutRecTrack1->isChecked() ? (1 << 0) : 0) | (ui->advOutRecTrack2->isChecked() ? (1 << 1) : 0) |
-		(ui->advOutRecTrack3->isChecked() ? (1 << 2) : 0) | (ui->advOutRecTrack4->isChecked() ? (1 << 3) : 0) |
-		(ui->advOutRecTrack5->isChecked() ? (1 << 4) : 0) | (ui->advOutRecTrack6->isChecked() ? (1 << 5) : 0);
-	return tracks;
+	int mask = 0;
+	for (int i = 0; i < (int)advOutRecTrackBoxes.size(); ++i) {
+		if (advOutRecTrackBoxes[i] && advOutRecTrackBoxes[i]->isChecked())
+			mask |= (1 << i);
+	}
+	return mask;
 }
 
 int OBSBasicSettings::AdvOutGetStreamingSelectedAudioTracks()
 {
-	int tracks = (ui->advOutMultiTrack1->isChecked() ? (1 << 0) : 0) |
-		     (ui->advOutMultiTrack2->isChecked() ? (1 << 1) : 0) |
-		     (ui->advOutMultiTrack3->isChecked() ? (1 << 2) : 0) |
-		     (ui->advOutMultiTrack4->isChecked() ? (1 << 3) : 0) |
-		     (ui->advOutMultiTrack5->isChecked() ? (1 << 4) : 0) |
-		     (ui->advOutMultiTrack6->isChecked() ? (1 << 5) : 0);
-	return tracks;
+	int mask = 0;
+	for (int i = 0; i < (int)advOutMultiTrackBoxes.size(); ++i) {
+		if (advOutMultiTrackBoxes[i] && advOutMultiTrackBoxes[i]->isChecked())
+			mask |= (1 << i);
+	}
+	return mask;
 }
 
 /* Using setEditable(true) on a QComboBox when there's a custom style in use

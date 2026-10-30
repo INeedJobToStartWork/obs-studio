@@ -1,0 +1,61 @@
+name: Windows x64 build (12 audio tracks)
+
+on:
+  push:
+    branches:
+      - cursor/12-audio-tracks-366a
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-x64:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure (CMake)
+        shell: pwsh
+        run: >
+          cmake -S . -B build
+          -G "Visual Studio 17 2022" -A x64
+          -DOBS_VERSION_OVERRIDE="12tracks-${{ github.sha }}"
+
+      - name: Build (RelWithDebInfo)
+        shell: pwsh
+        run: cmake --build build --config RelWithDebInfo --parallel
+
+      - name: Prepare portable bundle
+        shell: pwsh
+        run: |
+          $rundir = Join-Path "build" "rundir"
+          if (-not (Test-Path $rundir)) { throw "rundir not found: $rundir" }
+          $subdirs = Get-ChildItem -Path $rundir -Directory | Select-Object -ExpandProperty FullName
+          if (-not $subdirs) { throw "No subdirectories under $rundir" }
+          # Prefer RelWithDebInfo if present
+          $bundle = $subdirs | Where-Object { $_ -match 'RelWithDebInfo' } | Select-Object -First 1
+          if (-not $bundle) { $bundle = $subdirs[0] }
+          New-Item -Path (Join-Path $bundle "portable_mode.txt") -ItemType File -Force | Out-Null
+          $zip = Join-Path $env:GITHUB_WORKSPACE "obs-studio-12tracks-windows-x64.zip"
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path (Join-Path $bundle '*') -DestinationPath $zip
+          Write-Output "ZIP_PATH=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: obs-studio-12tracks-windows-x64
+          path: ${{ env.ZIP_PATH }}
+
+      - name: Create prerelease
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: 12tracks-${{ github.sha }}
+          name: OBS Studio 12 Tracks (${{ github.sha }})
+          prerelease: true
+          files: ${{ env.ZIP_PATH }}

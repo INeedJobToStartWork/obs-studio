@@ -4,6 +4,7 @@
 
 #include <QObject>
 #include <QPointer>
+#include <vector>
 
 class BalanceSlider;
 class QCheckBox;
@@ -41,12 +42,7 @@ private:
 	QPointer<QLabel> labelR;
 	QPointer<QSpinBox> syncOffset;
 	QPointer<QCheckBox> monitoringCheckBox;
-	QPointer<QCheckBox> mixer1;
-	QPointer<QCheckBox> mixer2;
-	QPointer<QCheckBox> mixer3;
-	QPointer<QCheckBox> mixer4;
-	QPointer<QCheckBox> mixer5;
-	QPointer<QCheckBox> mixer6;
+	std::vector<QPointer<QCheckBox>> mixers;
 
 	std::vector<OBSSignal> sigs;
 
