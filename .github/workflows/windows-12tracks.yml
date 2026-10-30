@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - cursor/12-audio-tracks-366a
+    paths-ignore:
+      - publish.trigger
+      - .github/workflows/windows-12tracks.yml
+      - .github/workflows/publish-12tracks.yml
   workflow_dispatch:
 
 permissions:
