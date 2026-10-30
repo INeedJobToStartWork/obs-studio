@@ -1,17 +1,17 @@
 name: Publish 12-tracks zip
 
 on:
-  push:
-    branches:
-      - cursor/12-audio-tracks-366a
-    paths:
-      - .github/workflows/publish-12tracks.yml
+  workflow_run:
+    workflows: ["Windows x64 build (12 audio tracks)"]
+    types: [completed]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   publish:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - name: Download latest Windows artifact from build workflow
@@ -29,7 +29,7 @@ jobs:
       - name: Create prerelease with asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: 12tracks-${{ github.sha }}
-          name: OBS Studio 12 Tracks (${{ github.sha }})
+          tag_name: 12tracks-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          name: OBS Studio 12 Tracks (${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }})
           prerelease: true
           files: artifacts/**
