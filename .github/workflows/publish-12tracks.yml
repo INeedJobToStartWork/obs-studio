@@ -17,7 +17,7 @@ jobs:
       - name: Download latest Windows artifact from build workflow
         uses: dawidd6/action-download-artifact@v2
         with:
-          workflow: Windows x64 build (12 audio tracks)
+          workflow: windows-12tracks.yml
           branch: cursor/12-audio-tracks-366a
           name: obs-studio-12tracks-windows-x64
           path: artifacts
