@@ -38,6 +38,24 @@ elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
   endif()
 endif()
 
+# If version canonicalization failed to produce three list elements, apply a safe fallback
+list(LENGTH _obs_version_canonical _obs_version_canonical_len)
+if(_obs_version_canonical_len LESS 3)
+  if(DEFINED OBS_VERSION_OVERRIDE AND OBS_VERSION_OVERRIDE MATCHES "([0-9]+)\\.([0-9]+)\\.([0-9]+).*")
+    string(
+      REGEX REPLACE
+      "([0-9]+)\\.([0-9]+)\\.([0-9]+).*"
+      "\\1;\\2;\\3"
+      _obs_version_canonical
+      ${OBS_VERSION_OVERRIDE}
+    )
+    set(_obs_version ${OBS_VERSION_OVERRIDE})
+  else()
+    set(_obs_version_canonical "0;0;1")
+    set(_obs_version "0.0.1")
+  endif()
+endif()
+
 # Set beta/rc versions if suffix included in version string
 if(_obs_version MATCHES "[0-9]+\\.[0-9]+\\.[0-9]+-rc[0-9]+")
   string(REGEX REPLACE "[0-9]+\\.[0-9]+\\.[0-9]+-rc([0-9]+).*$" "\\1" _obs_release_candidate ${_obs_version})
