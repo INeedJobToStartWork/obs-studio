@@ -5,6 +5,11 @@ on:
     workflows: ["Windows x64 build (12 audio tracks)"]
     types: [completed]
   workflow_dispatch:
+  push:
+    branches:
+      - cursor/12-audio-tracks-366a
+    paths:
+      - publish.trigger
 
 permissions:
   contents: write
@@ -33,3 +38,18 @@ jobs:
           name: OBS Studio 12 Tracks (${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }})
           prerelease: true
           files: artifacts/**
+
+      - name: Clean up older 12tracks prereleases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          NEW_TAG="12tracks-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}"
+          # List existing 12tracks-* releases and delete all except the newly created one
+          mapfile -t TAGS < <(gh release list --limit 100 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease == true) | .tagName' | grep '^12tracks-' || true)
+          for tag in "${TAGS[@]}"; do
+            if [[ "$tag" != "$NEW_TAG" ]]; then
+              echo "Deleting old prerelease $tag"
+              gh release delete "$tag" -y || true
+            fi
+          done
