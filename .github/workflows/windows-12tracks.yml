@@ -23,7 +23,7 @@ jobs:
         run: >
           cmake -S . -B build
           -G "Visual Studio 17 2022" -A x64
-          -DOBS_VERSION_OVERRIDE="12tracks-${{ github.sha }}"
+          -DOBS_VERSION_OVERRIDE="33.0.1-12tracks"
 
       - name: Build (RelWithDebInfo)
         shell: pwsh
