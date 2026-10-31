@@ -43,6 +43,11 @@
 
 #include <QCompleter>
 #include <QStandardItemModel>
+#include <QGroupBox>
+#include <QFormLayout>
+#include <QLabel>
+#include <QComboBox>
+#include <QLineEdit>
 
 #include <sstream>
 
@@ -266,6 +271,43 @@ static void PopulateAdvancedBitrates(initializer_list<QComboBox *> boxes, const 
 				continue;
 			}
 
+			box->addItem(QString::number(bitrate));
+		}
+
+		if (box->findData(currentBitrate) == -1) {
+			int bitrate = FindClosestAvailableAudioBitrate(box, currentBitrate.toInt());
+			box->setCurrentText(QString::number(bitrate));
+		} else {
+			box->setCurrentText(currentBitrate);
+		}
+	}
+}
+
+static void PopulateAdvancedBitratesVec(const std::vector<QPointer<QComboBox>> &boxes, const char *stream_id,
+					const char *rec_id)
+{
+	auto &streamBitrates = GetAudioEncoderBitrates(stream_id);
+	auto &recBitrates = GetAudioEncoderBitrates(rec_id);
+	if (streamBitrates.empty() || recBitrates.empty()) {
+		return;
+	}
+
+	QList<int> streamBitratesList;
+	for (auto &bitrate : streamBitrates) {
+		streamBitratesList << bitrate;
+	}
+
+	for (auto &boxPtr : boxes) {
+		if (!boxPtr)
+			continue;
+		QComboBox *box = boxPtr;
+		QString currentBitrate = box->currentText();
+		box->clear();
+
+		for (auto &bitrate : recBitrates) {
+			if (streamBitratesList.indexOf(bitrate) == -1) {
+				continue;
+			}
 			box->addItem(QString::number(bitrate));
 		}
 
@@ -686,6 +728,51 @@ OBSBasicSettings::OBSBasicSettings(QWidget *parent)
 		}
 	}
 
+	/* Advanced: Audio tab — add Track7–12 bitrate/name fields dynamically */
+	{
+		advOutTrackBitrateBoxes.clear();
+		advOutTrackNameEdits.clear();
+		advOutTrackBitrateBoxes.reserve(MAX_AUDIO_MIXES);
+		advOutTrackNameEdits.reserve(MAX_AUDIO_MIXES);
+		advOutTrackBitrateBoxes.push_back(ui->advOutTrack1Bitrate);
+		advOutTrackBitrateBoxes.push_back(ui->advOutTrack2Bitrate);
+		advOutTrackBitrateBoxes.push_back(ui->advOutTrack3Bitrate);
+		advOutTrackBitrateBoxes.push_back(ui->advOutTrack4Bitrate);
+		advOutTrackBitrateBoxes.push_back(ui->advOutTrack5Bitrate);
+		advOutTrackBitrateBoxes.push_back(ui->advOutTrack6Bitrate);
+		advOutTrackNameEdits.push_back(ui->advOutTrack1Name);
+		advOutTrackNameEdits.push_back(ui->advOutTrack2Name);
+		advOutTrackNameEdits.push_back(ui->advOutTrack3Name);
+		advOutTrackNameEdits.push_back(ui->advOutTrack4Name);
+		advOutTrackNameEdits.push_back(ui->advOutTrack5Name);
+		advOutTrackNameEdits.push_back(ui->advOutTrack6Name);
+
+		for (int i = 6; i < (int)MAX_AUDIO_MIXES; ++i) {
+			QGroupBox *group = new QGroupBox(QString("Track %1").arg(i + 1), this);
+			QFormLayout *form = new QFormLayout(group);
+			form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+			form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+			QLabel *bitrateLabel = new QLabel(QTStr("Basic.Settings.Output.AudioBitrate"), group);
+			QComboBox *bitrateBox = new QComboBox(group);
+			form->addRow(bitrateLabel, bitrateBox);
+
+			QLabel *nameLabel = new QLabel(QTStr("Name"), group);
+			QLineEdit *nameEdit = new QLineEdit(group);
+			form->addRow(nameLabel, nameEdit);
+
+			ui->verticalLayout_28->addWidget(group);
+
+			connect(bitrateBox, &QComboBox::currentIndexChanged, this,
+				&OBSBasicSettings::UpdateStreamDelayEstimate);
+			connect(bitrateBox, &QComboBox::currentIndexChanged, this,
+				&OBSBasicSettings::AdvReplayBufferChanged);
+
+			advOutTrackBitrateBoxes.push_back(bitrateBox);
+			advOutTrackNameEdits.push_back(nameEdit);
+		}
+	}
+
 	ui->simpleOutputVBitrate->setSingleStep(50);
 	ui->simpleOutputVBitrate->setSuffix(" Kbps");
 	ui->advOutFFVBitrate->setSingleStep(50);
@@ -787,18 +874,7 @@ OBSBasicSettings::OBSBasicSettings(QWidget *parent)
 	connect(ui->simpleOutputVBitrate, &QSpinBox::valueChanged, this, &OBSBasicSettings::UpdateStreamDelayEstimate);
 	connect(ui->simpleOutputABitrate, &QComboBox::currentIndexChanged, this,
 		&OBSBasicSettings::UpdateStreamDelayEstimate);
-	connect(ui->advOutTrack1Bitrate, &QComboBox::currentIndexChanged, this,
-		&OBSBasicSettings::UpdateStreamDelayEstimate);
-	connect(ui->advOutTrack2Bitrate, &QComboBox::currentIndexChanged, this,
-		&OBSBasicSettings::UpdateStreamDelayEstimate);
-	connect(ui->advOutTrack3Bitrate, &QComboBox::currentIndexChanged, this,
-		&OBSBasicSettings::UpdateStreamDelayEstimate);
-	connect(ui->advOutTrack4Bitrate, &QComboBox::currentIndexChanged, this,
-		&OBSBasicSettings::UpdateStreamDelayEstimate);
-	connect(ui->advOutTrack5Bitrate, &QComboBox::currentIndexChanged, this,
-		&OBSBasicSettings::UpdateStreamDelayEstimate);
-	connect(ui->advOutTrack6Bitrate, &QComboBox::currentIndexChanged, this,
-		&OBSBasicSettings::UpdateStreamDelayEstimate);
+	// Existing bitrate boxes already connected; dynamic ones are connected when created
 
 	//Apply button disabled until change.
 	EnableApplyButton(false);
@@ -885,18 +961,7 @@ OBSBasicSettings::OBSBasicSettings(QWidget *parent)
 	connect(ui->advOutRecTrack4, &QCheckBox::toggled, this, &OBSBasicSettings::AdvReplayBufferChanged);
 	connect(ui->advOutRecTrack5, &QCheckBox::toggled, this, &OBSBasicSettings::AdvReplayBufferChanged);
 	connect(ui->advOutRecTrack6, &QCheckBox::toggled, this, &OBSBasicSettings::AdvReplayBufferChanged);
-	connect(ui->advOutTrack1Bitrate, &QComboBox::currentIndexChanged, this,
-		&OBSBasicSettings::AdvReplayBufferChanged);
-	connect(ui->advOutTrack2Bitrate, &QComboBox::currentIndexChanged, this,
-		&OBSBasicSettings::AdvReplayBufferChanged);
-	connect(ui->advOutTrack3Bitrate, &QComboBox::currentIndexChanged, this,
-		&OBSBasicSettings::AdvReplayBufferChanged);
-	connect(ui->advOutTrack4Bitrate, &QComboBox::currentIndexChanged, this,
-		&OBSBasicSettings::AdvReplayBufferChanged);
-	connect(ui->advOutTrack5Bitrate, &QComboBox::currentIndexChanged, this,
-		&OBSBasicSettings::AdvReplayBufferChanged);
-	connect(ui->advOutTrack6Bitrate, &QComboBox::currentIndexChanged, this,
-		&OBSBasicSettings::AdvReplayBufferChanged);
+	// Existing bitrate boxes already connected; dynamic ones are connected when created
 	connect(ui->advOutRecType, &QComboBox::currentIndexChanged, this, &OBSBasicSettings::AdvReplayBufferChanged);
 	connect(ui->advOutRecEncoder, &QComboBox::currentIndexChanged, this, &OBSBasicSettings::AdvReplayBufferChanged);
 	connect(ui->advRBSecMax, &QSpinBox::valueChanged, this, &OBSBasicSettings::AdvReplayBufferChanged);
@@ -2222,56 +2287,40 @@ void OBSBasicSettings::LoadAdvOutputFFmpegSettings()
 
 void OBSBasicSettings::LoadAdvOutputAudioSettings()
 {
-	int track1Bitrate = config_get_uint(main->Config(), "AdvOut", "Track1Bitrate");
-	int track2Bitrate = config_get_uint(main->Config(), "AdvOut", "Track2Bitrate");
-	int track3Bitrate = config_get_uint(main->Config(), "AdvOut", "Track3Bitrate");
-	int track4Bitrate = config_get_uint(main->Config(), "AdvOut", "Track4Bitrate");
-	int track5Bitrate = config_get_uint(main->Config(), "AdvOut", "Track5Bitrate");
-	int track6Bitrate = config_get_uint(main->Config(), "AdvOut", "Track6Bitrate");
-	const char *name1 = config_get_string(main->Config(), "AdvOut", "Track1Name");
-	const char *name2 = config_get_string(main->Config(), "AdvOut", "Track2Name");
-	const char *name3 = config_get_string(main->Config(), "AdvOut", "Track3Name");
-	const char *name4 = config_get_string(main->Config(), "AdvOut", "Track4Name");
-	const char *name5 = config_get_string(main->Config(), "AdvOut", "Track5Name");
-	const char *name6 = config_get_string(main->Config(), "AdvOut", "Track6Name");
-
 	const char *encoder_id = config_get_string(main->Config(), "AdvOut", "AudioEncoder");
 	const char *rec_encoder_id = config_get_string(main->Config(), "AdvOut", "RecAudioEncoder");
 
-	PopulateAdvancedBitrates({ui->advOutTrack1Bitrate, ui->advOutTrack2Bitrate, ui->advOutTrack3Bitrate,
-				  ui->advOutTrack4Bitrate, ui->advOutTrack5Bitrate, ui->advOutTrack6Bitrate},
-				 encoder_id, strcmp(rec_encoder_id, "none") != 0 ? rec_encoder_id : encoder_id);
+	PopulateAdvancedBitratesVec(advOutTrackBitrateBoxes, encoder_id,
+				    strcmp(rec_encoder_id, "none") != 0 ? rec_encoder_id : encoder_id);
 
-	track1Bitrate = FindClosestAvailableAudioBitrate(ui->advOutTrack1Bitrate, track1Bitrate);
-	track2Bitrate = FindClosestAvailableAudioBitrate(ui->advOutTrack2Bitrate, track2Bitrate);
-	track3Bitrate = FindClosestAvailableAudioBitrate(ui->advOutTrack3Bitrate, track3Bitrate);
-	track4Bitrate = FindClosestAvailableAudioBitrate(ui->advOutTrack4Bitrate, track4Bitrate);
-	track5Bitrate = FindClosestAvailableAudioBitrate(ui->advOutTrack5Bitrate, track5Bitrate);
-	track6Bitrate = FindClosestAvailableAudioBitrate(ui->advOutTrack6Bitrate, track6Bitrate);
+	// Load per-track bitrate and name for all tracks
+	for (size_t i = 0; i < advOutTrackBitrateBoxes.size(); ++i) {
+		if (!advOutTrackBitrateBoxes[i])
+			continue;
+		std::string key = "Track" + std::to_string(static_cast<int>(i) + 1) + "Bitrate";
+		int tb = config_get_uint(main->Config(), "AdvOut", key.c_str());
+		tb = FindClosestAvailableAudioBitrate(advOutTrackBitrateBoxes[i], tb);
+		SetComboByName(advOutTrackBitrateBoxes[i], QString::number(tb));
+	}
 
 	// restrict list of bitrates when multichannel is OFF
 	const char *speakers = config_get_string(main->Config(), "Audio", "ChannelSetup");
 
 	// restrict list of bitrates when multichannel is OFF
 	if (!IsSurround(speakers)) {
-		RestrictResetBitrates({ui->advOutTrack1Bitrate, ui->advOutTrack2Bitrate, ui->advOutTrack3Bitrate,
-				       ui->advOutTrack4Bitrate, ui->advOutTrack5Bitrate, ui->advOutTrack6Bitrate},
-				      320);
+		for (auto &box : advOutTrackBitrateBoxes) {
+			if (box)
+				RestrictResetBitrates({box}, 320);
+		}
 	}
 
-	SetComboByName(ui->advOutTrack1Bitrate, QString::number(track1Bitrate));
-	SetComboByName(ui->advOutTrack2Bitrate, QString::number(track2Bitrate));
-	SetComboByName(ui->advOutTrack3Bitrate, QString::number(track3Bitrate));
-	SetComboByName(ui->advOutTrack4Bitrate, QString::number(track4Bitrate));
-	SetComboByName(ui->advOutTrack5Bitrate, QString::number(track5Bitrate));
-	SetComboByName(ui->advOutTrack6Bitrate, QString::number(track6Bitrate));
-
-	ui->advOutTrack1Name->setText(name1);
-	ui->advOutTrack2Name->setText(name2);
-	ui->advOutTrack3Name->setText(name3);
-	ui->advOutTrack4Name->setText(name4);
-	ui->advOutTrack5Name->setText(name5);
-	ui->advOutTrack6Name->setText(name6);
+	for (size_t i = 0; i < advOutTrackNameEdits.size(); ++i) {
+		if (!advOutTrackNameEdits[i])
+			continue;
+		std::string key = "Track" + std::to_string(static_cast<int>(i) + 1) + "Name";
+		const char *nm = config_get_string(main->Config(), "AdvOut", key.c_str());
+		advOutTrackNameEdits[i]->setText(QT_UTF8(nm));
+	}
 }
 
 void OBSBasicSettings::LoadOutputSettings()
@@ -3640,18 +3689,19 @@ void OBSBasicSettings::SaveOutputSettings()
 		}
 		config_set_int(main->Config(), "AdvOut", "FFAudioMixes", mixesMask);
 	}
-	SaveCombo(ui->advOutTrack1Bitrate, "AdvOut", "Track1Bitrate");
-	SaveCombo(ui->advOutTrack2Bitrate, "AdvOut", "Track2Bitrate");
-	SaveCombo(ui->advOutTrack3Bitrate, "AdvOut", "Track3Bitrate");
-	SaveCombo(ui->advOutTrack4Bitrate, "AdvOut", "Track4Bitrate");
-	SaveCombo(ui->advOutTrack5Bitrate, "AdvOut", "Track5Bitrate");
-	SaveCombo(ui->advOutTrack6Bitrate, "AdvOut", "Track6Bitrate");
-	SaveEdit(ui->advOutTrack1Name, "AdvOut", "Track1Name");
-	SaveEdit(ui->advOutTrack2Name, "AdvOut", "Track2Name");
-	SaveEdit(ui->advOutTrack3Name, "AdvOut", "Track3Name");
-	SaveEdit(ui->advOutTrack4Name, "AdvOut", "Track4Name");
-	SaveEdit(ui->advOutTrack5Name, "AdvOut", "Track5Name");
-	SaveEdit(ui->advOutTrack6Name, "AdvOut", "Track6Name");
+	// Save per-track bitrate and name for all tracks
+	for (size_t i = 0; i < advOutTrackBitrateBoxes.size(); ++i) {
+		if (!advOutTrackBitrateBoxes[i])
+			continue;
+		std::string key = "Track" + std::to_string(static_cast<int>(i) + 1) + "Bitrate";
+		SaveCombo(advOutTrackBitrateBoxes[i], "AdvOut", key.c_str());
+	}
+	for (size_t i = 0; i < advOutTrackNameEdits.size(); ++i) {
+		if (!advOutTrackNameEdits[i])
+			continue;
+		std::string key = "Track" + std::to_string(static_cast<int>(i) + 1) + "Name";
+		SaveEdit(advOutTrackNameEdits[i], "AdvOut", key.c_str());
+	}
 
 	if (vodTrackCheckbox) {
 		SaveCheckBox(simpleVodTrack, "SimpleOutput", "VodTrackEnabled");
@@ -4417,9 +4467,7 @@ void OBSBasicSettings::SpeakerLayoutChanged(int idx)
 
 		string stream_encoder_id = ui->advOutAEncoder->currentData().toString().toStdString();
 		string record_encoder_id = ui->advOutRecAEncoder->currentData().toString().toStdString();
-		PopulateAdvancedBitrates({ui->advOutTrack1Bitrate, ui->advOutTrack2Bitrate, ui->advOutTrack3Bitrate,
-					  ui->advOutTrack4Bitrate, ui->advOutTrack5Bitrate, ui->advOutTrack6Bitrate},
-					 stream_encoder_id.c_str(),
+		PopulateAdvancedBitratesVec(advOutTrackBitrateBoxes, stream_encoder_id.c_str(),
 					 record_encoder_id == "none" ? stream_encoder_id.c_str()
 								     : record_encoder_id.c_str());
 	} else {
@@ -4427,18 +4475,19 @@ void OBSBasicSettings::SpeakerLayoutChanged(int idx)
 		 * Reset audio bitrate for simple and adv mode, update list of
 		 * bitrates and save setting.
 		 */
-		RestrictResetBitrates({ui->simpleOutputABitrate, ui->advOutTrack1Bitrate, ui->advOutTrack2Bitrate,
-				       ui->advOutTrack3Bitrate, ui->advOutTrack4Bitrate, ui->advOutTrack5Bitrate,
-				       ui->advOutTrack6Bitrate},
-				      320);
+		RestrictResetBitrates({ui->simpleOutputABitrate}, 320);
+		for (auto &box : advOutTrackBitrateBoxes) {
+			if (box)
+				RestrictResetBitrates({box}, 320);
+		}
 
 		SaveCombo(ui->simpleOutputABitrate, "SimpleOutput", "ABitrate");
-		SaveCombo(ui->advOutTrack1Bitrate, "AdvOut", "Track1Bitrate");
-		SaveCombo(ui->advOutTrack2Bitrate, "AdvOut", "Track2Bitrate");
-		SaveCombo(ui->advOutTrack3Bitrate, "AdvOut", "Track3Bitrate");
-		SaveCombo(ui->advOutTrack4Bitrate, "AdvOut", "Track4Bitrate");
-		SaveCombo(ui->advOutTrack5Bitrate, "AdvOut", "Track5Bitrate");
-		SaveCombo(ui->advOutTrack6Bitrate, "AdvOut", "Track6Bitrate");
+		for (size_t i = 0; i < advOutTrackBitrateBoxes.size(); ++i) {
+			if (!advOutTrackBitrateBoxes[i])
+				continue;
+			std::string key = "Track" + std::to_string(static_cast<int>(i) + 1) + "Bitrate";
+			SaveCombo(advOutTrackBitrateBoxes[i], "AdvOut", key.c_str());
+		}
 	}
 
 	UpdateAudioWarnings();
@@ -6076,15 +6125,14 @@ void OBSBasicSettings::AdvAudioEncodersChanged()
 		recEncoder = streamEncoder;
 	}
 
-	PopulateAdvancedBitrates({ui->advOutTrack1Bitrate, ui->advOutTrack2Bitrate, ui->advOutTrack3Bitrate,
-				  ui->advOutTrack4Bitrate, ui->advOutTrack5Bitrate, ui->advOutTrack6Bitrate},
-				 QT_TO_UTF8(streamEncoder), QT_TO_UTF8(recEncoder));
+	PopulateAdvancedBitratesVec(advOutTrackBitrateBoxes, QT_TO_UTF8(streamEncoder), QT_TO_UTF8(recEncoder));
 
 	if (IsSurround(QT_TO_UTF8(ui->channelSetup->currentText()))) {
 		return;
 	}
 
-	RestrictResetBitrates({ui->advOutTrack1Bitrate, ui->advOutTrack2Bitrate, ui->advOutTrack3Bitrate,
-			       ui->advOutTrack4Bitrate, ui->advOutTrack5Bitrate, ui->advOutTrack6Bitrate},
-			      320);
+	for (auto &box : advOutTrackBitrateBoxes) {
+		if (box)
+			RestrictResetBitrates({box}, 320);
+	}
 }

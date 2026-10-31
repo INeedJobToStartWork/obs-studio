@@ -131,6 +131,8 @@ private:
 	std::vector<QPointer<QCheckBox>> advOutMultiTrackBoxes;
 	std::vector<QPointer<QRadioButton>> advOutTrackRadios;
 	std::vector<QPointer<QRadioButton>> flvTrackRadios;
+	std::vector<QPointer<QComboBox>> advOutTrackBitrateBoxes;
+	std::vector<QPointer<QLineEdit>> advOutTrackNameEdits;
 
 	QIcon hotkeyConflictIcon;
 
