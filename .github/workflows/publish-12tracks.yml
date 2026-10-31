@@ -1,0 +1,55 @@
+name: Publish 12-tracks zip
+
+on:
+  workflow_run:
+    workflows: ["Windows x64 build (12 audio tracks)"]
+    types: [completed]
+  workflow_dispatch:
+  push:
+    branches:
+      - cursor/12-audio-tracks-366a
+    paths:
+      - publish.trigger
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download latest Windows artifact from build workflow
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: windows-12tracks.yml
+          branch: cursor/12-audio-tracks-366a
+          name: obs-studio-12tracks-windows-x64
+          path: artifacts
+          if_no_artifact_found: fail
+
+      - name: List files
+        run: ls -lah artifacts
+
+      - name: Create prerelease with asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: 12tracks-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          name: OBS Studio 12 Tracks (${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }})
+          prerelease: true
+          files: artifacts/**
+
+      - name: Clean up older 12tracks prereleases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          NEW_TAG="12tracks-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}"
+          # List existing 12tracks-* releases and delete all except the newly created one
+          mapfile -t TAGS < <(gh release list --limit 100 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease == true) | .tagName' | grep '^12tracks-' || true)
+          for tag in "${TAGS[@]}"; do
+            if [[ "$tag" != "$NEW_TAG" ]]; then
+              echo "Deleting old prerelease $tag"
+              gh release delete "$tag" -y || true
+            fi
+          done

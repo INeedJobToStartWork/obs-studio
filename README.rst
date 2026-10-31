@@ -39,6 +39,11 @@ Quick Links
 
 - Bug Tracker: https://github.com/obsproject/obs-studio/issues
 
+This fork
+---------
+
+This fork produces a Windows x64 portable zip with 12 audio tracks enabled.
+
 Contributing
 ------------
 

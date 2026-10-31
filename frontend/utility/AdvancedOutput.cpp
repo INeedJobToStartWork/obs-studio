@@ -576,10 +576,10 @@ void AdvancedOutput::SetupOutputs()
 
 int AdvancedOutput::GetAudioBitrate(size_t i, const char *id) const
 {
-	static const char *names[] = {
-		"Track1Bitrate", "Track2Bitrate", "Track3Bitrate", "Track4Bitrate", "Track5Bitrate", "Track6Bitrate",
-	};
-	int bitrate = (int)config_get_uint(main->Config(), "AdvOut", names[i]);
+	std::string key = "Track";
+	key += std::to_string(static_cast<int>(i) + 1);
+	key += "Bitrate";
+	int bitrate = (int)config_get_uint(main->Config(), "AdvOut", key.c_str());
 	return FindClosestAvailableAudioBitrate(id, bitrate);
 }
 

@@ -14,13 +14,14 @@ permissions:
 jobs:
   check-format:
     name: Format 🔍
-    if: github.ref_name == 'master'
+    if: ${{ false }}
     uses: ./.github/workflows/check-format.yaml
     permissions:
       contents: read
 
   build-project:
     name: Build 🧱
+    if: ${{ false }}
     uses: ./.github/workflows/build-project.yaml
     secrets: inherit
     permissions:

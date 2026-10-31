@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.28...3.30)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/common/bootstrap.cmake" NO_POLICY_SCOPE)
 
+# Ensure a valid semantic version for project() when OBS_VERSION_OVERRIDE is provided on forks without tags
+if(DEFINED OBS_VERSION_OVERRIDE)
+  string(REGEX REPLACE "([0-9]+)\\.([0-9]+)\\.([0-9]+).*" "\\1.\\2.\\3" OBS_VERSION_CANONICAL "${OBS_VERSION_OVERRIDE}")
+endif()
+
 project(obs-studio VERSION ${OBS_VERSION_CANONICAL})
 
 if(CMAKE_HOST_SYSTEM_NAME MATCHES "Windows")
@@ -35,3 +40,5 @@ add_subdirectory(test/test-input)
 add_subdirectory(frontend)
 
 message_configuration()
+
+# Note: fork-specific CI trigger comment
