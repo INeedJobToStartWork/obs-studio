@@ -40,3 +40,5 @@ add_subdirectory(test/test-input)
 add_subdirectory(frontend)
 
 message_configuration()
+
+# Note: fork-specific CI trigger comment
