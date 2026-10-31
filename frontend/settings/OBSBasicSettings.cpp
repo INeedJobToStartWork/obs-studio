@@ -767,6 +767,7 @@ OBSBasicSettings::OBSBasicSettings(QWidget *parent)
 				&OBSBasicSettings::UpdateStreamDelayEstimate);
 			connect(bitrateBox, &QComboBox::currentIndexChanged, this,
 				&OBSBasicSettings::AdvReplayBufferChanged);
+			connect(nameEdit, &QLineEdit::textChanged, this, &OBSBasicSettings::OutputsChanged);
 
 			advOutTrackBitrateBoxes.push_back(bitrateBox);
 			advOutTrackNameEdits.push_back(nameEdit);
@@ -4954,24 +4955,12 @@ void OBSBasicSettings::UpdateAdvOutStreamDelayEstimate()
 	QString aBitrateText;
 
 	switch (trackIndex) {
-	case 1:
-		aBitrateText = ui->advOutTrack1Bitrate->currentText();
-		break;
-	case 2:
-		aBitrateText = ui->advOutTrack2Bitrate->currentText();
-		break;
-	case 3:
-		aBitrateText = ui->advOutTrack3Bitrate->currentText();
-		break;
-	case 4:
-		aBitrateText = ui->advOutTrack4Bitrate->currentText();
-		break;
-	case 5:
-		aBitrateText = ui->advOutTrack5Bitrate->currentText();
-		break;
-	case 6:
-		aBitrateText = ui->advOutTrack6Bitrate->currentText();
-		break;
+	default: {
+		int idx = std::clamp(trackIndex - 1, 0, (int)advOutTrackBitrateBoxes.size() - 1);
+		if (idx >= 0 && idx < (int)advOutTrackBitrateBoxes.size() && advOutTrackBitrateBoxes[idx]) {
+			aBitrateText = advOutTrackBitrateBoxes[idx]->currentText();
+		}
+	} break;
 	}
 
 	int seconds = ui->streamDelaySec->value();
@@ -5345,23 +5334,10 @@ void OBSBasicSettings::AdvReplayBufferChanged()
 	bool replayBufferEnabled = ui->advReplayBuf->isChecked();
 
 	int abitrate = 0;
-	if (ui->advOutRecTrack1->isChecked()) {
-		abitrate += ui->advOutTrack1Bitrate->currentText().toInt();
-	}
-	if (ui->advOutRecTrack2->isChecked()) {
-		abitrate += ui->advOutTrack2Bitrate->currentText().toInt();
-	}
-	if (ui->advOutRecTrack3->isChecked()) {
-		abitrate += ui->advOutTrack3Bitrate->currentText().toInt();
-	}
-	if (ui->advOutRecTrack4->isChecked()) {
-		abitrate += ui->advOutTrack4Bitrate->currentText().toInt();
-	}
-	if (ui->advOutRecTrack5->isChecked()) {
-		abitrate += ui->advOutTrack5Bitrate->currentText().toInt();
-	}
-	if (ui->advOutRecTrack6->isChecked()) {
-		abitrate += ui->advOutTrack6Bitrate->currentText().toInt();
+	for (int i = 0; i < (int)std::min(advOutRecTrackBoxes.size(), advOutTrackBitrateBoxes.size()); ++i) {
+		if (advOutRecTrackBoxes[i] && advOutRecTrackBoxes[i]->isChecked() && advOutTrackBitrateBoxes[i]) {
+			abitrate += advOutTrackBitrateBoxes[i]->currentText().toInt();
+		}
 	}
 
 	int seconds = ui->advRBSecMax->value();
